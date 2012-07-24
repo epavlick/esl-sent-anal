@@ -3,42 +3,87 @@ import rebuild_sents
 #edit object containing information about an atomic change made to a sentence
 class Node:
 	id_num = 0
-	def __init__(self, _parent, _text):
+	
+	@staticmethod
+	def print_list(nodes):
+		for n in nodes:
+			if(isinstance(n, Node)):
+				if(n.is_root):
+					print str(n),
+				else:
+					print str(n) #+ '<-',
+			else:
+				Node.print_list(n)
+
+	def __init__(self, _pos, _parent, _text, _blank):
 		#id (unique within sentence)
 		self.id = Node.id_num
+		self.pos = _pos
 		#id of parent in previous revision
+		assert isinstance(_parent, list)
 		self.parent = _parent
-		if(_parent == None):
+		self.is_blank = _blank
+		if(_parent == [None]):
 			self.is_root = True
-		#revision number (when this word/change was introduced)
-		#self.rev = _rev
+		else:
+			self.is_root = False
 		#word in sentence
 		self.text = _text
 		Node.id_num +=1
+	
 	def __str__(self):
-		pid = str(self.parent[0].id) + ' - ' + str(self.parent[len(self.parent)-1].id)
-		return '[id: '+str(self.id)+', parent: '+ pid +', text: '+self.text+']'
+		if(self.is_root):
+			return '[ Head ]'
+		else:
+			pid = str(self.parent[0].pos) + '-' + str(self.parent[len(self.parent)-1].pos)
+			return '[pos:'+str(self.pos)+' parent:'+ pid +' '+self.text+']'
+	
+	def lineage(self):
+		l = [self]
+		par = self.parent
+		if(self.is_root):
+			return [self]
+		else:
+			for p in par:
+			#	print "p is "+str(p)
+				l.append(p.lineage())
+		return l
 
 class Sentence:
 	def __init__(self, sent):
-		self.head = Node([None], "Head")
+		self.head = Node(0, [None], "Head", False)
 		#list of revisions
 		self.revisions = []
-	#	self.revisions.append(Revision(0, sent.split()))
 		self.latest = 0
 	def revise(self, edit):
 		last_revision = self.revisions[self.latest]
-#		print "Old: " + str(last_revision)
 		new = last_revision.revise(edit)
-#		print "New: " + str(new)
 		self.revisions.append(new)
 		self.latest += 1		
+	def clean_print(self):
+		print '['+str(self.head.text)+']'
+		for r in self.revisions:
+			s = ""
+			for w in r.words:
+				s += '['+w.text+']'
+			print s
+
 	def print_sent(self):
 		for r in self.revisions:
 			print str(r)			
+	
 	def print_final(self):
 		print "Initial: " + str(self.revisions[0])
 		print "Final: " + str(self.revisions[self.latest])
+	
+	def print_lineage(self):
+		for r in self.revisions:
+			print '----' + str(r.num) + '----'
+			for w in r.words:
+				Node.print_list(w.lineage())
+				print
+			print
+	
 	
 class Revision:
 	def __init__(self, _num):
@@ -65,32 +110,48 @@ class Revision:
 	def change(self, edit):
 	        new = Revision(self.num + 1)
 		ewords = edit.new_wd.split()
-	        for w in self.words[:int(edit.sp_start)]:
-			node = Node([w], w.text)
+		pos = 0
+	        for w in self.words[:(2*(int(edit.sp_start))+1)]:
+			node = Node(pos, [w], w.text, False)
 	                new.words.append(node)
+			pos += 1
 		parent = []
-		for p in range(int(edit.sp_start), int(edit.sp_end)):
-			parent.append(self.words[p])
+		for w in self.words[(2*(int(edit.sp_start))+1):(2*(int(edit.sp_end))+1)]:
+			parent.append(w)
 	        for w in ewords:
-	        	node = Node(parent, w)
+			node = Node(pos, parent, w, False)
 	                new.words.append(node)
-	        for p in range(int(edit.sp_end), len(self.words)):
-			node = Node([self.words[p]], self.words[p].text)
+			pos += 1
+			if(len(ewords)>1 and w != ewords[len(ewords)-1]):#if adding multiple words, put spaces between them
+				n = Node(pos, parent, "", True)
+				new.words.append(n)
+				pos += 1
+	        for w in self.words[(2*(int(edit.sp_end))): len(self.words)]:
+			node = Node(pos, [w], w.text, False)
 	                new.words.append(node)
+			pos += 1
 	        return new 
 
 	def insert(self, edit):
         	new = Revision(self.num + 1)
 		ewords = edit.new_wd.split()
-		for p in range(0, int(edit.sp_start)):
-			node = Node([self.words[p]], self.words[p].text)
+		pos = 0
+		for w in self.words[:(2*(int(edit.sp_start))+1)]:
+			node = Node(pos, [w], w.text, False)
 	                new.words.append(node)
+			pos += 1
 	        for w in ewords:
-			node = Node(None, w)
+			parent = self.words[2*(int(edit.sp_start))]
+			node = Node(pos, [parent], w, False)
 	                new.words.append(node)
-	        for p in range(int(edit.sp_start), len(self.words)):
-			node = Node([self.words[p]], self.words[p].text)
+			pos += 1
+			node = Node(pos, [parent], "", True)
 	                new.words.append(node)
+			pos += 1
+	        for w in self.words[(2*(int(edit.sp_start))+1): len(self.words)]:
+			node = Node(pos, [w], w.text, False)
+	                new.words.append(node)
+			pos += 1
 		return new
 
 	def reorder(self, edit):
@@ -101,60 +162,81 @@ class Revision:
 
 	def __move_back(self, edit):
 		new = Revision(self.num + 1)
-	        ewords = self.words[int(edit.sp_start):int(edit.sp_end)]
-	        for w in self.words[:int(edit.new_wd)]:
-	        	node = Node([w], w.text)	
+	        ewords = self.words[(2*(int(edit.sp_start))+1):(2*(int(edit.sp_end))+1)]
+		pos = 0
+	        for w in self.words[:(2*(int(edit.new_wd))+1)]:
+	        	node = Node(pos, [w], w.text, False)	
 		        new.words.append(node)
+			pos += 1
 	        for w in ewords:
 			onode = int(edit.sp_start)
-	        	node = Node([self.words[onode]], w.text)
+	        	node = Node(pos, [self.words[onode]], w.text, False)
 			onode += 1	
 		        new.words.append(node)
-	        for w in self.words[int(edit.new_wd):int(edit.sp_start)]:
-			node = Node([w], w.text)	
+			pos += 1
+	        for w in self.words[(2*(int(edit.new_wd))+1):(2*(int(edit.sp_start))+1)]:
+			node = Node(pos, [w], w.text, False)	
 		        new.words.append(node)
-	        for w in self.words[int(edit.sp_end):]:
-	        	node = Node([w], w.text)	
+			pos += 1
+	        for w in self.words[(2*(int(edit.sp_end))+1):]:
+	        	node = Node(pos, [w], w.text, False)	
 		        new.words.append(node)
+			pos += 1
 		return new
 
 	def __move_forward(self, edit):
 		new = Revision(self.num + 1)
-	        ewords = self.words[int(edit.sp_start):int(edit.sp_end)]
-	        for w in self.words[:int(edit.sp_start)]:
-	        	node = Node([w], w.text)	
+	        ewords = self.words[(2*(int(edit.sp_start))+1):(2*(int(edit.sp_end))+1)]
+	        pos = 0
+		for w in self.words[:(2*(int(edit.sp_start))+1)]:
+	        	node = Node(pos, [w], w.text, False)	
 		        new.words.append(node)
-	        for w in self.words[int(edit.sp_end):int(edit.new_wd)]:
-			node = Node([w], w.text)	
+			pos += 1
+	        for w in self.words[(2*(int(edit.sp_end))+1):(2*(int(edit.new_wd))+1)]:
+			node = Node(pos, [w], w.text, False)	
 		        new.words.append(node)
+			pos += 1
 	        for w in ewords:
 			onode = int(edit.sp_start)
-	        	node = Node([self.words[onode]], w.text)
+	        	node = Node(pos, [self.words[onode]], w.text, False)
 			onode += 1	
 		        new.words.append(node)
-	        for w in self.words[int(edit.new_wd):]:
-			node = Node([w], w.text)	
+			pos += 1
+	        for w in self.words[(2*(int(edit.new_wd))+1):]:
+			node = Node(pos, [w], w.text, False)	
 		        new.words.append(node)
+			pos += 1
 		return new
 
 	def delete(self, edit):
         	new = Revision(self.num + 1)
 		ewords = edit.new_wd.split()
-		for p in range(0, int(edit.sp_start)):
-			node = Node([self.words[p]], self.words[p].text)
+		pos = 0
+		for w in self.words[:(2*(int(edit.sp_start))+1)]:
+			node = Node(pos, [w], w.text, False)
 	                new.words.append(node)
-	        for p in range(int(edit.sp_end), len(self.words)):
-			node = Node([self.words[p]], self.words[p].text)
+			pos += 1
+	        for w in self.words[(2*(int(edit.sp_end))+1): len(self.words)]:
+			node = Node(pos, [w], w.text, False)
 	                new.words.append(node)
+			pos += 1
 		return new
 			 
 def initialize_sentence(sent):
 	words = sent.split()
 	graph = Sentence(sent)
 	rev = Revision(0) 
+	pos = 0
+	n = Node(pos, [graph.head], "", True)
+	pos += 1
+	rev.words.append(n)
 	for w in words:
-		n = Node([graph.head], w)
+		n = Node(pos, [graph.head], w, False)
 		rev.words.append(n)
+		pos += 1
+		n = Node(pos, [graph.head], "", True)
+		rev.words.append(n)
+		pos += 1
 	graph.revisions.append(rev)
 	return graph
 	
@@ -175,8 +257,10 @@ def get_graph(all_sents, all_edits):
 					if(not(len(start.split())==0)):
 						s.revise(edit)
 					#	start = rebuild_sents.do_edit(start, edit)
-			s.print_final()
-			graph.append(s)		
-		
-
+			#	s.print_final()
+				graph.append(s)		
+	
+	graph[1].print_lineage()	
+	#for s in graph:
+	#	s.print_lineage()
 	
