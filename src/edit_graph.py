@@ -1,4 +1,5 @@
 import rebuild_sents
+import figures
 
 #edit object containing information about an atomic change made to a sentence
 class Node:
@@ -11,7 +12,7 @@ class Node:
 				if(n.is_root):
 					print str(n),
 				else:
-					print str(n) #+ '<-',
+					print str(n)# + '<-',
 			else:
 				Node.print_list(n)
 
@@ -77,12 +78,13 @@ class Sentence:
 		print "Final: " + str(self.revisions[self.latest])
 	
 	def print_lineage(self):
-		for r in self.revisions:
-			print '----' + str(r.num) + '----'
-			for w in r.words:
-				Node.print_list(w.lineage())
-				print
-			print
+		figures.draw_revisions(self.revisions)
+#		for r in self.revisions:
+#			print '----' + str(r.num) + '----'
+#			for w in r.words:
+#				Node.print_list(w.lineage())
+#				print
+#			print
 	
 	
 class Revision:
@@ -112,7 +114,7 @@ class Revision:
 		ewords = edit.new_wd.split()
 		pos = 0
 	        for w in self.words[:(2*(int(edit.sp_start))+1)]:
-			node = Node(pos, [w], w.text, False)
+			node = Node(pos, [w], w.text, w.is_blank)
 	                new.words.append(node)
 			pos += 1
 		parent = []
@@ -127,7 +129,7 @@ class Revision:
 				new.words.append(n)
 				pos += 1
 	        for w in self.words[(2*(int(edit.sp_end))): len(self.words)]:
-			node = Node(pos, [w], w.text, False)
+			node = Node(pos, [w], w.text, w.is_blank)
 	                new.words.append(node)
 			pos += 1
 	        return new 
@@ -137,7 +139,7 @@ class Revision:
 		ewords = edit.new_wd.split()
 		pos = 0
 		for w in self.words[:(2*(int(edit.sp_start))+1)]:
-			node = Node(pos, [w], w.text, False)
+			node = Node(pos, [w], w.text, w.is_blank)
 	                new.words.append(node)
 			pos += 1
 	        for w in ewords:
@@ -149,7 +151,7 @@ class Revision:
 	                new.words.append(node)
 			pos += 1
 	        for w in self.words[(2*(int(edit.sp_start))+1): len(self.words)]:
-			node = Node(pos, [w], w.text, False)
+			node = Node(pos, [w], w.text, w.is_blank)
 	                new.words.append(node)
 			pos += 1
 		return new
@@ -165,21 +167,21 @@ class Revision:
 	        ewords = self.words[(2*(int(edit.sp_start))+1):(2*(int(edit.sp_end))+1)]
 		pos = 0
 	        for w in self.words[:(2*(int(edit.new_wd))+1)]:
-	        	node = Node(pos, [w], w.text, False)	
+	        	node = Node(pos, [w], w.text, w.is_blank)	
 		        new.words.append(node)
 			pos += 1
 	        for w in ewords:
 			onode = int(edit.sp_start)
-	        	node = Node(pos, [self.words[onode]], w.text, False)
+	        	node = Node(pos, [self.words[onode]], w.text, w.is_blank)
 			onode += 1	
 		        new.words.append(node)
 			pos += 1
 	        for w in self.words[(2*(int(edit.new_wd))+1):(2*(int(edit.sp_start))+1)]:
-			node = Node(pos, [w], w.text, False)	
+			node = Node(pos, [w], w.text, w.is_blank)	
 		        new.words.append(node)
 			pos += 1
 	        for w in self.words[(2*(int(edit.sp_end))+1):]:
-	        	node = Node(pos, [w], w.text, False)	
+	        	node = Node(pos, [w], w.text, w.is_blank)	
 		        new.words.append(node)
 			pos += 1
 		return new
@@ -189,21 +191,21 @@ class Revision:
 	        ewords = self.words[(2*(int(edit.sp_start))+1):(2*(int(edit.sp_end))+1)]
 	        pos = 0
 		for w in self.words[:(2*(int(edit.sp_start))+1)]:
-	        	node = Node(pos, [w], w.text, False)	
+	        	node = Node(pos, [w], w.text, w.is_blank)	
 		        new.words.append(node)
 			pos += 1
 	        for w in self.words[(2*(int(edit.sp_end))+1):(2*(int(edit.new_wd))+1)]:
-			node = Node(pos, [w], w.text, False)	
+			node = Node(pos, [w], w.text, w.is_blank)	
 		        new.words.append(node)
 			pos += 1
 	        for w in ewords:
 			onode = int(edit.sp_start)
-	        	node = Node(pos, [self.words[onode]], w.text, False)
+	        	node = Node(pos, [self.words[onode]], w.text, w.is_blank)
 			onode += 1	
 		        new.words.append(node)
 			pos += 1
 	        for w in self.words[(2*(int(edit.new_wd))+1):]:
-			node = Node(pos, [w], w.text, False)	
+			node = Node(pos, [w], w.text, w.is_blank)	
 		        new.words.append(node)
 			pos += 1
 		return new
@@ -213,11 +215,11 @@ class Revision:
 		ewords = edit.new_wd.split()
 		pos = 0
 		for w in self.words[:(2*(int(edit.sp_start))+1)]:
-			node = Node(pos, [w], w.text, False)
+			node = Node(pos, [w], w.text, w.is_blank)
 	                new.words.append(node)
 			pos += 1
 	        for w in self.words[(2*(int(edit.sp_end))+1): len(self.words)]:
-			node = Node(pos, [w], w.text, False)
+			node = Node(pos, [w], w.text, w.is_blank)
 	                new.words.append(node)
 			pos += 1
 		return new
