@@ -1,5 +1,6 @@
 import rebuild_sents
 import figures
+import sys
 
 #edit object containing information about an atomic change made to a sentence
 class Node:
@@ -12,17 +13,18 @@ class Node:
 				if(n.is_root):
 					print str(n),
 				else:
-					print str(n)# + '<-',
+					print str(n) + '<-',
 			else:
 				Node.print_list(n)
 
-	def __init__(self, _pos, _parent, _text, _blank):
+	def __init__(self, _pos, _parent, _text, _blank, _children=[]):
 		#id (unique within sentence)
 		self.id = Node.id_num
 		self.pos = _pos
 		#id of parent in previous revision
 		assert isinstance(_parent, list)
 		self.parent = _parent
+		self.children = _children
 		self.is_blank = _blank
 		if(_parent == [None]):
 			self.is_root = True
@@ -79,9 +81,10 @@ class Sentence:
 		for r in self.revisions:
 			print str(r)			
 	
-	def print_final(self):
-		print "Initial: " + str(self.revisions[0])
-		print "Final: " + str(self.revisions[self.latest])
+	def print_final(self, buf=sys.stdout):
+		buf.write("Initial: " + str(self.revisions[0])+'\n')
+		buf.write("Final: " + str(self.revisions[self.latest])+'\n')
+		buf.write('\n')
 	
 	def print_lineage(self, name):
 		figures.draw_revisions(self.revisions, "figures-20120726/"+name) # "figures/sent-"+str(self.id))
@@ -262,13 +265,20 @@ class EditGraph:
 	def __init__(self, graph):
 		self.data = graph
 	
-	def get_edits(self, sentid):
+	def get_edits(self, sentid=None):
 		edits = {}
-		for assign in self.data:
-			edits[assign] = [] 
-			if sentid in self.data[assign]:
-				for edit in self.data[assign][sentid]:
-					edits[assign].append(edit)
+		if(sentid==None):
+			for assign in self.data:
+				edits[assign] = [] 
+				for s in self.data[assign]:
+					for edit in self.data[assign][s]:
+						edits[assign].append(edit)
+		else:
+			for assign in self.data:
+				edits[assign] = [] 
+				if sentid in self.data[assign]:
+					for edit in self.data[assign][sentid]:
+						edits[assign].append(edit)
 		return edits
 			 
 class RevisionGraph:
@@ -276,10 +286,15 @@ class RevisionGraph:
 	def __init__(self, graph):
 		self.data = graph
 	
-	def get_revisions(self, sentid):
+	def get_revisions(self, sentid=None):
 		revs = []
-		for r in self.data[sentid]:
-			revs.append(r)
+		if(sentid==None):
+			for s in self.data:
+				for r in self.data[s]:
+					revs.append(r)
+		else:
+			for r in self.data[sentid]:
+				revs.append(r)
 		return revs
 
 def initialize_sentence(sent):
@@ -300,16 +315,15 @@ def initialize_sentence(sent):
 	graph.revisions.append(rev)
 	return graph
 
-def generate_figures(graph):
-   #	reps = []
-   #    for sent in graph_by_sent:
-   #    	if(len(graph_by_sent[sent]) > 2):
-   #                     reps.append(sent)
-   #    print reps
-        i = 0
-        for s in graph['45403']:
-                s.print_lineage('45403.'+str(i))
-                i += 1
+def generate_figures(graph, sentid=None):
+   	if(sentid==None):
+		for s in graph:
+			s.print_lineage(str(s.id))
+        else:
+		i = 0
+	        for s in graph[sentid]:
+        	        s.print_lineage(sentid+'.'+str(i))
+        	        i += 1
 	
 def get_graph(all_sents, all_edits):
 	graph_by_sent = {}

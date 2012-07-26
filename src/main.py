@@ -23,14 +23,20 @@ graph = edit_graph.get_graph(all_sents, all_edits)
 
 rgraph = graph[0]
 egraph = graph[1]
+"""
+print "writing final sentences to log..."
+log = open("edits.log", "w")
+for r in rgraph.get_revisions():
+	r.print_final(log)
+log.close()
 
-edits = egraph.get_edits('45403')
-
-for a in edits:
-	for e in edits[a]:
-		print str(a), str(e)
-
-for r in rgraph.get_revisions('45403'):
-	r.print_sent()
+print "generating figures..."
+i = 0
+for s in rgraph.data:
+	if(i%10==0):
+		edit_graph.generate_figures(rgraph.data, s)
+	i += 1	
+"""
+edit_graph.generate_figures(rgraph.data, '45403')
 
 print "FINISH"
