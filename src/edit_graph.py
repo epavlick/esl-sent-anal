@@ -37,7 +37,7 @@ class Node:
 			return '[ Head ]'
 		else:
 			pid = str(self.parent[0].pos) + '-' + str(self.parent[len(self.parent)-1].pos)
-			return '[pos:'+str(self.pos)+' parent:'+ pid +' '+self.text+']'
+			return '[pos:'+str(self.pos)+' parent:'+ str(pid) +' '+str(self.text)+']'
 	
 	def lineage(self):
 		l = [self]
@@ -51,16 +51,22 @@ class Node:
 		return l
 
 class Sentence:
+	id_num = 0
 	def __init__(self, sent):
+		self.id = Sentence.id_num
 		self.head = Node(0, [None], "Head", False)
 		#list of revisions
 		self.revisions = []
 		self.latest = 0
+		Sentence.id_num += 1
 	def revise(self, edit):
+#		for r in self.revisions:
+#			print str(r),
+#		print
 		last_revision = self.revisions[self.latest]
 		new = last_revision.revise(edit)
 		self.revisions.append(new)
-		self.latest += 1		
+		self.latest += 1	
 	def clean_print(self):
 		print '['+str(self.head.text)+']'
 		for r in self.revisions:
@@ -77,8 +83,8 @@ class Sentence:
 		print "Initial: " + str(self.revisions[0])
 		print "Final: " + str(self.revisions[self.latest])
 	
-	def print_lineage(self):
-		figures.draw_revisions(self.revisions)
+	def print_lineage(self, name):
+		figures.draw_revisions(self.revisions, "figures-20120726/"+name) # "figures/sent-"+str(self.id))
 #		for r in self.revisions:
 #			print '----' + str(r.num) + '----'
 #			for w in r.words:
@@ -92,22 +98,34 @@ class Revision:
 		self.num = _num
 		#list of nodes
 		self.words = []
+		self.edit_num = -1
 
 	def __str__(self):
 		s = ""
 		for w in self.words:
 			s += str(w.text) + " "	
-		return "{ "+str(self.num)+" "+s+" }"
+		return "{ "+str(self.num)+" "+str(self.edit_num)+" "+s+" }"
 
 	def revise(self, edit):
-		if(edit.mode == "change"):
+#		print len(self.words),
+#		for w in self.words:
+#			if(w.is_blank):
+#				print '* ['+str(w.pos)+']',
+#			else:
+##				print w.text + ' ['+str(w.pos)+']',
+#		print
+#		print edit
+		e = edit.mode.strip()
+		if(e == "change"):
 			return self.change(edit)
-		if(edit.mode == "insert"):
+		if(e == "insert"):
 			return self.insert(edit)
-		if(edit.mode == "reorder"):
+		if(e == "reorder"):
 			return self.reorder(edit)
-		if(edit.mode == "delete"):
+		if(e == "delete"):
 			return self.delete(edit)
+		else:
+			return self
 
 	def change(self, edit):
 	        new = Revision(self.num + 1)
@@ -118,21 +136,27 @@ class Revision:
 	                new.words.append(node)
 			pos += 1
 		parent = []
-		for w in self.words[(2*(int(edit.sp_start))+1):(2*(int(edit.sp_end))+1)]:
+		for w in self.words[(2*(int(edit.sp_start))+1):(2*(int(edit.sp_end)))]:
 			parent.append(w)
-	        for w in ewords:
-			node = Node(pos, parent, w, False)
-	                new.words.append(node)
+		if(len(ewords) == 0):
+			node = Node(pos, parent, "", True)
+			new.words.append(node)
 			pos += 1
-			if(len(ewords)>1 and w != ewords[len(ewords)-1]):#if adding multiple words, put spaces between them
-				n = Node(pos, parent, "", True)
-				new.words.append(n)
+		else:
+	      		for w in ewords:
+				node = Node(pos, parent, w, False)
+	                	new.words.append(node)
 				pos += 1
+				if(len(ewords)>1 and w != ewords[len(ewords)-1]):#if adding multiple words, put spaces between them
+					n = Node(pos, parent, "", True)
+					new.words.append(n)
+					pos += 1
 	        for w in self.words[(2*(int(edit.sp_end))): len(self.words)]:
 			node = Node(pos, [w], w.text, w.is_blank)
 	                new.words.append(node)
 			pos += 1
-	        return new 
+		new.edit_num = edit.seq_id
+		return new 
 
 	def insert(self, edit):
         	new = Revision(self.num + 1)
@@ -143,7 +167,13 @@ class Revision:
 	                new.words.append(node)
 			pos += 1
 	        for w in ewords:
-			parent = self.words[2*(int(edit.sp_start))]
+			#for w in self.words:
+			#	print '-'+str(w.text)+'-',
+			#print
+			if(2*(int(edit.sp_start)) < len(self.words)):
+				parent = self.words[2*(int(edit.sp_start))]
+			else:
+				parent = self.words[len(self.words) - 1]
 			node = Node(pos, [parent], w, False)
 	                new.words.append(node)
 			pos += 1
@@ -154,6 +184,7 @@ class Revision:
 			node = Node(pos, [w], w.text, w.is_blank)
 	                new.words.append(node)
 			pos += 1
+		new.edit_num = edit.seq_id
 		return new
 
 	def reorder(self, edit):
@@ -170,8 +201,8 @@ class Revision:
 	        	node = Node(pos, [w], w.text, w.is_blank)	
 		        new.words.append(node)
 			pos += 1
+		onode = 2*(int(edit.sp_start))+1
 	        for w in ewords:
-			onode = int(edit.sp_start)
 	        	node = Node(pos, [self.words[onode]], w.text, w.is_blank)
 			onode += 1	
 		        new.words.append(node)
@@ -184,6 +215,7 @@ class Revision:
 	        	node = Node(pos, [w], w.text, w.is_blank)	
 		        new.words.append(node)
 			pos += 1
+		new.edit_num = edit.seq_id
 		return new
 
 	def __move_forward(self, edit):
@@ -198,8 +230,8 @@ class Revision:
 			node = Node(pos, [w], w.text, w.is_blank)	
 		        new.words.append(node)
 			pos += 1
+		onode = 2*(int(edit.sp_start))+1
 	        for w in ewords:
-			onode = int(edit.sp_start)
 	        	node = Node(pos, [self.words[onode]], w.text, w.is_blank)
 			onode += 1	
 		        new.words.append(node)
@@ -208,6 +240,7 @@ class Revision:
 			node = Node(pos, [w], w.text, w.is_blank)	
 		        new.words.append(node)
 			pos += 1
+		new.edit_num = edit.seq_id
 		return new
 
 	def delete(self, edit):
@@ -222,8 +255,33 @@ class Revision:
 			node = Node(pos, [w], w.text, w.is_blank)
 	                new.words.append(node)
 			pos += 1
+		new.edit_num = edit.seq_id
 		return new
+
+class EditGraph:
+	def __init__(self, graph):
+		self.data = graph
+	
+	def get_edits(self, sentid):
+		edits = {}
+		for assign in self.data:
+			edits[assign] = [] 
+			if sentid in self.data[assign]:
+				for edit in self.data[assign][sentid]:
+					edits[assign].append(edit)
+		return edits
 			 
+class RevisionGraph:
+	"""Highest level data structure containing map from sentence id to all the revisions on that sentence"""
+	def __init__(self, graph):
+		self.data = graph
+	
+	def get_revisions(self, sentid):
+		revs = []
+		for r in self.data[sentid]:
+			revs.append(r)
+		return revs
+
 def initialize_sentence(sent):
 	words = sent.split()
 	graph = Sentence(sent)
@@ -241,28 +299,38 @@ def initialize_sentence(sent):
 		pos += 1
 	graph.revisions.append(rev)
 	return graph
+
+def generate_figures(graph):
+   #	reps = []
+   #    for sent in graph_by_sent:
+   #    	if(len(graph_by_sent[sent]) > 2):
+   #                     reps.append(sent)
+   #    print reps
+        i = 0
+        for s in graph['45403']:
+                s.print_lineage('45403.'+str(i))
+                i += 1
 	
 def get_graph(all_sents, all_edits):
-#	k = all_sents.keys()
-#	initialize_sentence(all_sents[k[0]])
-	graph = []
+	graph_by_sent = {}
+	edits_by_sent = {}
 	for assign in all_edits:
+		if(not(assign in edits_by_sent)):
+			edits_by_sent[assign] = {}
 		for sent in all_edits[assign]:
-			if(sent in all_sents):
+			if(not(sent in graph_by_sent)):
+				graph_by_sent[sent] = []
+			if(not(sent in edits_by_sent[assign])):
+				edits_by_sent[assign][sent] = []
+			if(sent != None):
 				start = all_sents[sent].strip()
 				start = start.strip('"')
 				s = initialize_sentence(start)
-				#s.print_sent()
 				these_edits = all_edits[assign][sent]
 				these_edits.sort()
-				for edit in all_edits[assign][sent]:
-					if(not(len(start.split())==0)):
-						s.revise(edit)
-					#	start = rebuild_sents.do_edit(start, edit)
-			#	s.print_final()
-				graph.append(s)		
-	
-	graph[1].print_lineage()	
-	#for s in graph:
-	#	s.print_lineage()
-	
+				for edit in these_edits:
+				#	if(not(len(start.split())==0)):
+					s.revise(edit)
+					edits_by_sent[assign][sent].append(edit)
+				graph_by_sent[sent].append(s)	
+	return [RevisionGraph(graph_by_sent), EditGraph(edits_by_sent)]

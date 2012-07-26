@@ -29,21 +29,20 @@ def get_edit(dt_row):
 	edit.old_wd = dt_row[' old_word']
 	edit.new_wd = dt_row[' new_word']
 	edit.mode = dt_row[' edit_type']
-	return {dt_row[' esl_sentence_id'] : edit}
+	return {dt_row[' esl_sentence_id'].strip() : edit}
 
 
 def build_edit_map(edit_data, sent_data):
 	raw_edits = csv.DictReader(edit_data)
-
 	#mapping from assignment: [list of {sentence: [list of edits]}]
 	all_edits = {}
 	for e in raw_edits: 
-		assign = e[' assignment_id']
+		assign = e[' assignment_id'].strip()
 		if(not(assign == "")): 
 			if(not(assign in all_edits)): 
 				all_edits[assign] = {}
 		edit = get_edit(e)
-		sent = edit.keys()[0]
+		sent = edit.keys()[0].strip()
 		if(not(sent == "")):
 			if(not(sent in all_edits[assign])):
 				all_edits[assign][sent] = [edit[sent]]
@@ -58,29 +57,4 @@ def build_sent_map(sent_data):
 		all_sents[s['id']] = s[' sentence']	
 	return all_sents
 
-## --- begin main --- ##
-
-if(len(sys.argv) < 2):
-	print "usage: provide path to edit_data and sent_ids"
-	exit(0)
-
-edit_data = open(sys.argv[1]+"/edit_data")
-sent_data = open(sys.argv[1]+"/sent_ids")
-
-all_edits = build_edit_map(edit_data, sent_data)
-all_sents = build_sent_map(sent_data)
-
-edit_graph.get_graph(all_sents, all_edits)
-
-#for assign in all_edits:
-#	for sent in all_edits[assign]:
-#		if(sent in all_sents):
-#			start = all_sents[sent].strip('"')
-#			print "ORIG: " + start
-#			these_edits = all_edits[assign][sent]
-#			these_edits.sort()
-#			for edit in all_edits[assign][sent]:
-#				if(not(len(start.split())==0)):
-#					start = rebuild_sents.do_edit(start, edit)
-#					print start
-
+	
