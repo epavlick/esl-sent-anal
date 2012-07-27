@@ -17,14 +17,15 @@ class Node:
 			else:
 				Node.print_list(n)
 
-	def __init__(self, _pos, _parent, _text, _blank, _children=[]):
+	def __init__(self, _pos, _parent, _text, _blank,):
 		#id (unique within sentence)
 		self.id = Node.id_num
 		self.pos = _pos
 		#id of parent in previous revision
 		assert isinstance(_parent, list)
 		self.parent = _parent
-		self.children = _children
+		self.children = [] 
+		self.alterations = []
 		self.is_blank = _blank
 		if(_parent == [None]):
 			self.is_root = True
@@ -41,6 +42,9 @@ class Node:
 			pid = str(self.parent[0].pos) + '-' + str(self.parent[len(self.parent)-1].pos)
 			return '[pos:'+str(self.pos)+' parent:'+ str(pid) +' '+str(self.text)+']'
 	
+	def add_child(self, node):
+		self.children.append(node)
+	
 	def lineage(self):
 		l = [self]
 		par = self.parent
@@ -48,9 +52,17 @@ class Node:
 			return [self]
 		else:
 			for p in par:
-			#	print "p is "+str(p)
 				l.append(p.lineage())
 		return l
+	
+	def get_fate(self):
+		fate = {self : {}}
+		if(self.children == []):
+			return fate
+		else:
+			for c in self.children:
+				fate[self][c] = c.get_fate()
+		return fate
 
 class Sentence:
 	id_num = 0
@@ -85,15 +97,28 @@ class Sentence:
 		buf.write("Initial: " + str(self.revisions[0])+'\n')
 		buf.write("Final: " + str(self.revisions[self.latest])+'\n')
 		buf.write('\n')
+
+	def get_fates(self):
+		destiny = []
+		for node in self.revisions[0].words:
+			destiny.append(node.get_fate())
+		return destiny
 	
+	def __print_one(self, dct):
+		s = ""
+		for key in dct:
+			if(dct[key] == {}):
+				return key.text #str(key)
+			else:
+				s += key.text + "->"+self.__print_one(dct[key])
+		return s
+
+	def print_fates(self, buf=sys.stdout):
+		for f in self.get_fates():
+			buf.write(self.__print_one(f)+'\n')
+
 	def print_lineage(self, name):
 		figures.draw_revisions(self.revisions, "figures-20120726/"+name) # "figures/sent-"+str(self.id))
-#		for r in self.revisions:
-#			print '----' + str(r.num) + '----'
-#			for w in r.words:
-#				Node.print_list(w.lineage())
-#				print
-#			print
 	
 	
 class Revision:
@@ -110,14 +135,6 @@ class Revision:
 		return "{ "+str(self.num)+" "+str(self.edit_num)+" "+s+" }"
 
 	def revise(self, edit):
-#		print len(self.words),
-#		for w in self.words:
-#			if(w.is_blank):
-#				print '* ['+str(w.pos)+']',
-#			else:
-##				print w.text + ' ['+str(w.pos)+']',
-#		print
-#		print edit
 		e = edit.mode.strip()
 		if(e == "change"):
 			return self.change(edit)
@@ -137,6 +154,7 @@ class Revision:
 	        for w in self.words[:(2*(int(edit.sp_start))+1)]:
 			node = Node(pos, [w], w.text, w.is_blank)
 	                new.words.append(node)
+			w.add_child(node)
 			pos += 1
 		parent = []
 		for w in self.words[(2*(int(edit.sp_start))+1):(2*(int(edit.sp_end)))]:
@@ -144,19 +162,25 @@ class Revision:
 		if(len(ewords) == 0):
 			node = Node(pos, parent, "", True)
 			new.words.append(node)
+			w.add_child(node)
 			pos += 1
 		else:
 	      		for w in ewords:
 				node = Node(pos, parent, w, False)
 	                	new.words.append(node)
+				for p in parent:
+					p.add_child(node)
 				pos += 1
 				if(len(ewords)>1 and w != ewords[len(ewords)-1]):#if adding multiple words, put spaces between them
 					n = Node(pos, parent, "", True)
 					new.words.append(n)
+					for p in parent:
+						p.add_child(node)
 					pos += 1
 	        for w in self.words[(2*(int(edit.sp_end))): len(self.words)]:
 			node = Node(pos, [w], w.text, w.is_blank)
 	                new.words.append(node)
+			w.add_child(node)
 			pos += 1
 		new.edit_num = edit.seq_id
 		return new 
@@ -168,24 +192,25 @@ class Revision:
 		for w in self.words[:(2*(int(edit.sp_start))+1)]:
 			node = Node(pos, [w], w.text, w.is_blank)
 	                new.words.append(node)
+			w.add_child(node)
 			pos += 1
 	        for w in ewords:
-			#for w in self.words:
-			#	print '-'+str(w.text)+'-',
-			#print
 			if(2*(int(edit.sp_start)) < len(self.words)):
 				parent = self.words[2*(int(edit.sp_start))]
 			else:
 				parent = self.words[len(self.words) - 1]
 			node = Node(pos, [parent], w, False)
 	                new.words.append(node)
+			parent.add_child(node)
 			pos += 1
 			node = Node(pos, [parent], "", True)
 	                new.words.append(node)
+			parent.add_child(node)
 			pos += 1
 	        for w in self.words[(2*(int(edit.sp_start))+1): len(self.words)]:
 			node = Node(pos, [w], w.text, w.is_blank)
 	                new.words.append(node)
+			w.add_child(node)
 			pos += 1
 		new.edit_num = edit.seq_id
 		return new
@@ -203,20 +228,24 @@ class Revision:
 	        for w in self.words[:(2*(int(edit.new_wd))+1)]:
 	        	node = Node(pos, [w], w.text, w.is_blank)	
 		        new.words.append(node)
+			w.add_child(node)
 			pos += 1
 		onode = 2*(int(edit.sp_start))+1
 	        for w in ewords:
 	        	node = Node(pos, [self.words[onode]], w.text, w.is_blank)
-			onode += 1	
 		        new.words.append(node)
+			self.words[onode].add_child(node)
+			onode += 1	
 			pos += 1
 	        for w in self.words[(2*(int(edit.new_wd))+1):(2*(int(edit.sp_start))+1)]:
 			node = Node(pos, [w], w.text, w.is_blank)	
 		        new.words.append(node)
+			w.add_child(node)
 			pos += 1
 	        for w in self.words[(2*(int(edit.sp_end))+1):]:
 	        	node = Node(pos, [w], w.text, w.is_blank)	
 		        new.words.append(node)
+			w.add_child(node)
 			pos += 1
 		new.edit_num = edit.seq_id
 		return new
@@ -228,20 +257,24 @@ class Revision:
 		for w in self.words[:(2*(int(edit.sp_start))+1)]:
 	        	node = Node(pos, [w], w.text, w.is_blank)	
 		        new.words.append(node)
+			w.add_child(node)
 			pos += 1
 	        for w in self.words[(2*(int(edit.sp_end))+1):(2*(int(edit.new_wd))+1)]:
 			node = Node(pos, [w], w.text, w.is_blank)	
 		        new.words.append(node)
+			w.add_child(node)
 			pos += 1
 		onode = 2*(int(edit.sp_start))+1
 	        for w in ewords:
 	        	node = Node(pos, [self.words[onode]], w.text, w.is_blank)
-			onode += 1	
 		        new.words.append(node)
+			self.words[onode].add_child(node)
+			onode += 1	
 			pos += 1
 	        for w in self.words[(2*(int(edit.new_wd))+1):]:
 			node = Node(pos, [w], w.text, w.is_blank)	
 		        new.words.append(node)
+			w.add_child(node)
 			pos += 1
 		new.edit_num = edit.seq_id
 		return new
@@ -253,10 +286,12 @@ class Revision:
 		for w in self.words[:(2*(int(edit.sp_start))+1)]:
 			node = Node(pos, [w], w.text, w.is_blank)
 	                new.words.append(node)
+			w.add_child(node)
 			pos += 1
 	        for w in self.words[(2*(int(edit.sp_end))+1): len(self.words)]:
 			node = Node(pos, [w], w.text, w.is_blank)
 	                new.words.append(node)
+			w.add_child(node)
 			pos += 1
 		new.edit_num = edit.seq_id
 		return new
