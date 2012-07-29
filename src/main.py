@@ -1,6 +1,7 @@
 import extract_data
 import sys
 import edit_graph
+import edit_anal
 
 if(len(sys.argv) < 2):
         print "usage: provide path to edit_data and sent_ids"
@@ -24,29 +25,32 @@ graph = edit_graph.get_graph(all_sents, all_edits)
 rgraph = graph[0]
 egraph = graph[1]
 
-print "writing final sentences to log..."
+edit_anal.change_agreement(rgraph.data)
+
+"""print "writing final sentences to log..."
 log = open("edits.log", "w")
 
-"""
+
 for r in rgraph.get_revisions():
 	r.print_final(log)
 log.close()
-
-print "generating figures..."
-i = 0
-for s in rgraph.data:
-	if(i%10==0):
-		edit_graph.generate_figures(rgraph.data, s)
-	i += 1	
 """
-#edit_graph.generate_figures(rgraph.data, '45403')
+#print "generating figures..."
+#i = 0
+#for s in rgraph.data:
+#	if(i%10==0):
+#	edit_graph.generate_figures(rgraph.data, s)
+#	i += 1	
 
+#edit_graph.generate_figures(rgraph.data, '45480')
+"""
 for n in rgraph.data:
 	log.write("------------"+n+"-----------"+'\n')
 	for s in rgraph.data[n]:
 		log.write('\n')
-		s.print_fates(log)
+		#s.print_fates(log)
+		s.print_alterations(log)
 
 log.close()
-
+"""
 print "FINISH"
