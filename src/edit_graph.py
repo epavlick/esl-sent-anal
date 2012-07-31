@@ -1,6 +1,8 @@
 import rebuild_sents
 import figures
 import sys
+import nltk
+from nltk.tag.simplify import simplify_wsj_tag
 
 #edit object containing information about an atomic change made to a sentence
 class Node:
@@ -29,17 +31,20 @@ class Node:
 		self.is_blank = _blank
 		if(_parent == [None]):
 			self.is_root = True
+			self.ipos_tag = 'HEAD'
 		else:
 			self.is_root = False
+			self.ipos_tag = [p.ipos_tag for p in _parent if not(p.is_root)]
 		#word in sentence
 		self.text = _text
+		self.pos_tag = []
 		Node.id_num +=1
 	
 	def __str__(self):
 		if(self.is_root):
 			return '[ Head ]'
 		else:
-			pid = str(self.parent[0].pos) + '-' + str(self.parent[len(self.parent)-1].pos)
+			pid = [p.pos for p in self.parent] #str(self.parent[0].pos) + '-' + str(self.parent[len(self.parent)-1].pos)
 			return '[pos:'+str(self.pos)+' parent:'+ str(pid) +' '+str(self.text)+']'
 	
 	def add_child(self, node):
@@ -50,6 +55,15 @@ class Node:
 		if(not(self.is_root)):
 			for p in self.parent:
 				p.alter(edit)
+	
+	def tag(self, _tag):
+		self.pos_tag.append(_tag)
+		if(not(self.is_root)):
+			for p in self.parent:
+				p.tag(_tag)
+	
+	def itag(self, _tag):
+		self.ipos_tag.append(_tag)
 	
 	def lineage(self):
 		l = [self]
@@ -89,9 +103,16 @@ class Sentence:
 		self.latest = 0
 		Sentence.id_num += 1
 	def revise(self, edit):
-#		for r in self.revisions:
-#			print str(r),
-#		print
+		#tag the first sentence
+		if(self.latest == 0):
+			itags = self.__get_initial_pos()
+			idx = 0
+			for r in self.revisions[0].words:
+				if(r.is_blank):
+					r.itag("BLANK")
+				else:
+					r.itag(itags[idx][1])
+					idx += 1	
 		last_revision = self.revisions[self.latest]
 		new = last_revision.revise(edit)
 		self.revisions.append(new)
@@ -119,13 +140,40 @@ class Sentence:
 			destiny.append(node.get_fate())
 		return destiny
 	
-	def get_alterations(self):
-		alts = {} 
-		for node in self.revisions[0].words:
-	#		print node.text, node.get_alterations()
-			alts[node.pos] = node.get_alterations()
-	#	print alts
+	def get_alterations(self, pos=False):
+		alts = {}
+		if(pos):
+			self.percolate_pos()
+			for node in self.revisions[0].words:
+				alts[node.pos] = {'alt' : node.get_alterations(), 'ipos' : node.ipos_tag, 'pos' : node.pos_tag}
+		else:
+			for node in self.revisions[0].words:
+				alts[node.pos] = node.get_alterations()
 		return alts
+
+	def __get_final_pos(self):
+		s = ""
+		for r in self.revisions[self.latest].words:
+			s += r.text + " "
+		toks = nltk.word_tokenize(s)
+		return [(word, simplify_wsj_tag(tag)) for word, tag in nltk.pos_tag(toks)]		
+
+	def __get_initial_pos(self):
+		s = ""
+		for r in self.revisions[0].words:
+			s += r.text + " "
+		toks = nltk.word_tokenize(s)
+		return [(word, simplify_wsj_tag(tag)) for word, tag in nltk.pos_tag(toks)]		
+	
+	def percolate_pos(self):
+		tags = self.__get_final_pos()
+		idx = 0
+		for r in self.revisions[self.latest].words:
+			if(r.is_blank):
+				r.tag("BLANK")
+			else:
+				r.tag(tags[idx][1])
+				idx += 1	
 
 	def __print_fate(self, dct):
 		s = ""

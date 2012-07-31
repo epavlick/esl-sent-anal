@@ -24,6 +24,34 @@ def by_mode(_data):
 		retmap[n] = submap
 	return retmap
 
+def by_pos(_data):
+	data = byn(_data)
+	retmap = {1 : {}, 2 : {}, 3 : {}, 4 : {}}
+	for n in retmap:
+		submap = {"change" : {}, "delete" : {}, "reorder" : {}, "insert" : {}}
+		for sentnum in data[n]:
+			for sent in data[n][sentnum]:
+				alts = sent.get_alterations(pos=True)
+				for a in alts:
+					if(not(alts[a]['alt'] == [])):
+						for e in alts[a]['alt']:
+							mode = e.mode.strip()
+							if(mode == "delete"):
+								pos = alts[a]['ipos'][0]
+								if(not(pos in submap[mode])):
+									submap[mode][pos] = 1
+								else:
+									submap[mode][pos] += 1
+							else:	
+								pos = alts[a]['pos']
+								for p in pos:
+									if(not(p in submap[mode])):
+										submap[mode][p] = 1
+									else:
+										submap[mode][p] += 1
+		retmap[n] = submap
+	return retmap
+
 def count_words(data, mode, n):
 	retmap = {}
 	for sentnum in data:

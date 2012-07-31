@@ -62,6 +62,15 @@ def plot_agreements(data, n=0, path=None):
 		name = dt.strftime("agr-%Y-%m-%d-%H:%m:%S")
 		plt.savefig(path+"/"+name)
 	plt.show()
+
+def plot_pos(data, n=0, path=None):
+        fig = plotbypos(data, path)
+        plt.suptitle("Parts of speech edited across edit modes")
+        if(not(path==None)):
+                dt = datetime.datetime.now()
+                name = dt.strftime("pos-%Y-%m-%d-%H:%m:%S")
+                plt.savefig(path+"/"+name)
+        plt.show()
 	
 def plot_modes(data, n=0, path=None):
 	fig = plotbyn(data, n, path)
@@ -90,6 +99,23 @@ def __plotone(data, n, path):
 	return fig
 	#plt.show()
 
+def plotbypos(data, path=None):
+	locs = {'change' : 221, 'insert' : 222, 'delete' : 223, 'reorder' : 224}
+        fig = plt.figure()
+	for nn in data: 
+		lbls = data[nn].keys()
+		yax = [data[nn][k] for k in lbls] 
+		xax = range(len(yax))
+		fig1 = fig.add_subplot(locs[nn]) 
+		fig1.bar(xax, yax)#, align="center") 
+		fig1.set_xticks(xax) 
+		fig1.set_xticklabels(lbls) 
+		fig1.set_title(nn)
+		plt.setp(fig1.get_xticklabels(), fontsize=8)
+		plt.tight_layout()
+       # fig.autofmt_xdate()
+	return fig
+
 def plotbyn(data, n=0, path=None):
 	if(n == 0):
 		locs = {1 : 221, 2 : 222, 3 : 223, 4 : 224}
@@ -103,12 +129,7 @@ def plotbyn(data, n=0, path=None):
 			fig1.set_xticks(xax)
 			fig1.set_xticklabels(lbls)
 			fig1.set_title(str(nn)+" x redundant")
-#		if(not(path==None)):
-#			dt = datetime.datetime.now()
-#			name = dt.strftime("%Y-%m-%d-%H:%m:%S")
-#			plt.savefig(path+"/"+name)
 		return fig
-	#	plt.show()
 	else:
 		__plotone(data, n, path)
 
