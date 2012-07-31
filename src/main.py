@@ -28,16 +28,17 @@ egraph = graph[1]
 
 figures.plot_agreements(edit_anal.agreement(rgraph.data), path="figures/agreement")
 
-#figures.plotbyn(edit_anal.by_mode(rgraph.data), n=3)
+#figures.plot_modes(edit_anal.by_mode(rgraph.data), path="figures/agreement")
 
-"""print "writing final sentences to log..."
+"""
+print "writing final sentences to log..."
 log = open("edits.log", "w")
 
 
 for r in rgraph.get_revisions():
+	log.write(str(r.id)+" ")
 	r.print_final(log)
 log.close()
-"""
 #print "generating figures..."
 #i = 0
 #for s in rgraph.data:
@@ -46,7 +47,7 @@ log.close()
 #	i += 1	
 
 #edit_graph.generate_figures(rgraph.data, '45480')
-"""
+
 for n in rgraph.data:
 	log.write("------------"+n+"-----------"+'\n')
 	for s in rgraph.data[n]:

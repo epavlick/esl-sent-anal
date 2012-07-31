@@ -30,19 +30,21 @@ def count_words(data, mode, n):
 		corrs = {}
 		for sent in data[sentnum]:
 			alts = sent.get_alterations()
+			found = False
 			for a in alts:
-				for e in alts[a]:
-					if(e.mode.strip() == mode):
-						if(not(a in corrs)):
-							corrs[a] = 0
-						else:
-							corrs[a] += 1
-						continue
+				if(not(found)):
+					for e in alts[a]:
+						if(e.mode.strip() == mode):
+							if(not(a in corrs)):
+								corrs[a] = 0
+								found = True
+							else:
+								corrs[a] += 1
+							break
 		if(n==1):
 			retmap[sentnum] = [float(corrs[idx]) / n for idx in corrs]
 		else:	
 			retmap[sentnum] = [float(corrs[idx]) / (n - 1) for idx in corrs]
-	return retmap
 	return retmap
 
 def __agreement(_data, mode, n):
@@ -54,10 +56,10 @@ def __agreement(_data, mode, n):
 		for c in chdata[num]:
 			cntsum += c
 			total += 1
-	return float(cntsum) / total
+	return (float(cntsum) / total) * (n - 1)
 
 	
-def agreement(data, mode=None, n=0):
+def agreement(data, n=0, mode=None):
 	ns = []
 	modes = []
 	retmap = {1 : {}, 2 : {}, 3 : {}, 4 : {}}

@@ -59,12 +59,21 @@ def plot_agreements(data, n=0, path=None):
 	plt.suptitle("Annotator agreement across edit modes")
 	if(not(path==None)):
 		dt = datetime.datetime.now()
-		name = dt.strftime("%Y-%m-%d-%H:%m:%S")
+		name = dt.strftime("agr-%Y-%m-%d-%H:%m:%S")
+		plt.savefig(path+"/"+name)
+	plt.show()
+	
+def plot_modes(data, n=0, path=None):
+	fig = plotbyn(data, n, path)
+	plt.suptitle("Number of edits by edit mode")
+	if(not(path==None)):
+		dt = datetime.datetime.now()
+		name = dt.strftime("mod-%Y-%m-%d-%H:%m:%S")
 		plt.savefig(path+"/"+name)
 	plt.show()
 	
 
-def __plotone(data, n):
+def __plotone(data, n, path):
 	fig = plt.figure()
 	lbls = data[n].keys()
 	yax = [data[n][k] for k in lbls]
@@ -73,11 +82,11 @@ def __plotone(data, n):
 	fig1.bar(xax, yax, align="center")
 	fig1.set_xticks(xax)
 	fig1.set_xticklabels(lbls)
-	fig1.set_title(str(nn)+" x redundant")
-	if(not(path==None)):
-		dt = datetime.datetime.now()
-		name = dt.strftime("%Y-%m-%d-%H:%m:%S")
-		plt.savefig(path+"/"+name)
+	fig1.set_title(str(n)+" x redundant")
+#	if(not(path==None)):
+#		dt = datetime.datetime.now()
+#		name = dt.strftime("%Y-%m-%d-%H:%m:%S")
+#		plt.savefig(path+"/"+name)
 	return fig
 	#plt.show()
 
@@ -94,14 +103,14 @@ def plotbyn(data, n=0, path=None):
 			fig1.set_xticks(xax)
 			fig1.set_xticklabels(lbls)
 			fig1.set_title(str(nn)+" x redundant")
-		if(not(path==None)):
-			dt = datetime.datetime.now()
-			name = dt.strftime("%Y-%m-%d-%H:%m:%S")
-			plt.savefig(path+"/"+name)
+#		if(not(path==None)):
+#			dt = datetime.datetime.now()
+#			name = dt.strftime("%Y-%m-%d-%H:%m:%S")
+#			plt.savefig(path+"/"+name)
 		return fig
 	#	plt.show()
 	else:
-		__plotone(data, n)
+		__plotone(data, n, path)
 
 	
 
