@@ -25,7 +25,7 @@ class Node:
 		assert isinstance(_parent, list)
 		self.parent = _parent
 		self.children = [] 
-		self.alterations = []
+		self.alterations = {} 
 		self.is_blank = _blank
 		if(_parent == [None]):
 			self.is_root = True
@@ -45,11 +45,11 @@ class Node:
 	def add_child(self, node):
 		self.children.append(node)
 	
-	def alter(self, mode):
-		self.alterations.append(mode)
+	def alter(self, edit):
+		self.alterations[edit.seq_id] = edit
 		if(not(self.is_root)):
 			for p in self.parent:
-				p.alter(mode)
+				p.alter(edit)
 	
 	def lineage(self):
 		l = [self]
@@ -71,7 +71,7 @@ class Node:
 		return fate
 
 	def get_alterations(self):
-		return self.alterations
+		return [self.alterations[id] for id in self.alterations]
 	
 	def has_changed(self, mode):
 		for a in self.alterations:

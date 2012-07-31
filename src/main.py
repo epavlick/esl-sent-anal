@@ -2,6 +2,7 @@ import extract_data
 import sys
 import edit_graph
 import edit_anal
+import figures 
 
 if(len(sys.argv) < 2):
         print "usage: provide path to edit_data and sent_ids"
@@ -25,7 +26,9 @@ graph = edit_graph.get_graph(all_sents, all_edits)
 rgraph = graph[0]
 egraph = graph[1]
 
-edit_anal.change_agreement(rgraph.data)
+figures.plot_agreements(edit_anal.agreement(rgraph.data), path="figures/agreement")
+
+#figures.plotbyn(edit_anal.by_mode(rgraph.data), n=3)
 
 """print "writing final sentences to log..."
 log = open("edits.log", "w")

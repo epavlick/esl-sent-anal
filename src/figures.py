@@ -1,4 +1,7 @@
 from pyx import *
+import numpy as np
+import matplotlib.pyplot as plt
+import datetime
 
 NODE_WIDTH = 1 
 NODE_HEIGHT = 0.5 
@@ -51,3 +54,57 @@ def draw_revisions(revs, name):
 		y -= 4*NODE_HEIGHT
 	c.writePDFfile(name)
 
+def plot_agreements(data, n=0, path=None):
+	fig = plotbyn(data, n, path)
+	plt.suptitle("Annotator agreement across edit modes")
+	if(not(path==None)):
+		dt = datetime.datetime.now()
+		name = dt.strftime("%Y-%m-%d-%H:%m:%S")
+		plt.savefig(path+"/"+name)
+	plt.show()
+	
+
+def __plotone(data, n):
+	fig = plt.figure()
+	lbls = data[n].keys()
+	yax = [data[n][k] for k in lbls]
+	xax = range(len(yax)) 
+	fig1 = fig.add_subplot(111)
+	fig1.bar(xax, yax, align="center")
+	fig1.set_xticks(xax)
+	fig1.set_xticklabels(lbls)
+	fig1.set_title(str(nn)+" x redundant")
+	if(not(path==None)):
+		dt = datetime.datetime.now()
+		name = dt.strftime("%Y-%m-%d-%H:%m:%S")
+		plt.savefig(path+"/"+name)
+	return fig
+	#plt.show()
+
+def plotbyn(data, n=0, path=None):
+	if(n == 0):
+		locs = {1 : 221, 2 : 222, 3 : 223, 4 : 224}
+		fig = plt.figure()
+		for nn in data:
+			lbls = data[nn].keys()
+			yax = [data[nn][k] for k in lbls]
+			xax = range(len(yax)) 
+			fig1 = fig.add_subplot(locs[nn])
+			fig1.bar(xax, yax, align="center")
+			fig1.set_xticks(xax)
+			fig1.set_xticklabels(lbls)
+			fig1.set_title(str(nn)+" x redundant")
+		if(not(path==None)):
+			dt = datetime.datetime.now()
+			name = dt.strftime("%Y-%m-%d-%H:%m:%S")
+			plt.savefig(path+"/"+name)
+		return fig
+	#	plt.show()
+	else:
+		__plotone(data, n)
+
+	
+
+
+
+	
