@@ -2,7 +2,7 @@ import rebuild_sents
 import figures
 import sys
 import nltk
-from nltk.tag.simplify import simplify_wsj_tag
+from nltk.tag.simplify import simplify_brown_tag
 
 #edit object containing information about an atomic change made to a sentence
 class Node:
@@ -57,6 +57,8 @@ class Node:
 				p.alter(edit)
 	
 	def tag(self, _tag):
+		if(_tag == "DT"):
+			print _tag, str(self)
 		self.pos_tag.append(_tag)
 		if(not(self.is_root)):
 			for p in self.parent:
@@ -151,19 +153,53 @@ class Sentence:
 				alts[node.pos] = node.get_alterations()
 		return alts
 
+	def simplify(self, tag):
+		# Natural Language Toolkit: POS Tag Simplification 
+		# 
+		# Copyright (C) 2001-2011 NLTK Project 
+		# Author: Steven Bird <sb@csse.unimelb.edu.au> 
+		# URL: <http://www.nltk.org/> 
+ 		# For license information, see LICENSE.TXT 
+ 		# http://khnt.hit.uib.no/icame/manuals/brown/INDEX.HTM 
+ 		brown_mapping1 = { 
+		'j': 'ADJ', 'p': 'PRO', 'm': 'MOD', 'q': 'DET', 
+		'w': 'WH', 'r': 'ADV', 'i': 'P', 
+		'u': 'UH', 'e': 'EX', 'o': 'NUM', 'b': 'V', 
+		'h': 'V', 'f': 'FW', 'a': 'DET', 't': 'TO', 
+		'cc': 'CNJ', 'cs': 'CNJ', 'cd': 'NUM', 
+		'do': 'V', 'dt': 'DET', 
+		'nn': 'N', 'nr': 'N', 'np': 'NP', 'nc': 'N'} 
+		brown_mapping2 = { 
+		'vb': 'V', 'vbd': 'VD', 'vbg': 'VG', 'vbn': 'VN', 
+		} 
+ 		tag = tag.lower()
+		if tag[0] in brown_mapping1: 
+			return brown_mapping1[tag[0]] 
+ 		elif tag[:2] in brown_mapping1:   # still doesn't handle DOD tag correctly 
+			return brown_mapping1[tag[:2]] 
+		try: 
+ 			if '-' in tag: 
+				tag = tag.split('-')[0] 
+			return brown_mapping2[tag] 
+		except KeyError: 
+			return tag.upper() 
+
+
 	def __get_final_pos(self):
 		s = ""
 		for r in self.revisions[self.latest].words:
 			s += r.text + " "
-		toks = nltk.word_tokenize(s)
-		return [(word, simplify_wsj_tag(tag)) for word, tag in nltk.pos_tag(toks)]		
+		toks = nltk.word_tokenize(figures.undo_csv_format(s))
+		#print nltk.pos_tag(toks)
+		return [(word, self.simplify(tag)) for word, tag in nltk.pos_tag(toks)]		
 
 	def __get_initial_pos(self):
 		s = ""
 		for r in self.revisions[0].words:
 			s += r.text + " "
-		toks = nltk.word_tokenize(s)
-		return [(word, simplify_wsj_tag(tag)) for word, tag in nltk.pos_tag(toks)]		
+		toks = nltk.word_tokenize(figures.undo_csv_format(s))
+		#print nltk.pos_tag(toks)
+		return [(word, self.simplify(tag)) for word, tag in nltk.pos_tag(toks)]		
 	
 	def percolate_pos(self):
 		tags = self.__get_final_pos()
@@ -172,6 +208,7 @@ class Sentence:
 			if(r.is_blank):
 				r.tag("BLANK")
 			else:
+			#	print idx, tags
 				r.tag(tags[idx][1])
 				idx += 1	
 

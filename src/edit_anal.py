@@ -1,5 +1,3 @@
-
-
 def byn(data):
 	retmap = {1 : {}, 2 : {}, 3 : {}, 4 : {}}
 	for sentnum in data:

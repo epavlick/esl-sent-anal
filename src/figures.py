@@ -59,7 +59,7 @@ def plot_agreements(data, n=0, path=None):
 	plt.suptitle("Annotator agreement across edit modes")
 	if(not(path==None)):
 		dt = datetime.datetime.now()
-		name = dt.strftime("agr-%Y-%m-%d-%H:%m:%S")
+		name = dt.strftime("agr-%Y-%m-%d-%H:%M:%S")
 		plt.savefig(path+"/"+name)
 	plt.show()
 
@@ -68,7 +68,7 @@ def plot_pos(data, n=0, path=None):
         plt.suptitle("Parts of speech edited across edit modes")
         if(not(path==None)):
                 dt = datetime.datetime.now()
-                name = dt.strftime("pos-%Y-%m-%d-%H:%m:%S")
+                name = dt.strftime("pos-%Y-%m-%d-%H:%M:%S")
                 plt.savefig(path+"/"+name)
         plt.show()
 	
@@ -77,7 +77,7 @@ def plot_modes(data, n=0, path=None):
 	plt.suptitle("Number of edits by edit mode")
 	if(not(path==None)):
 		dt = datetime.datetime.now()
-		name = dt.strftime("mod-%Y-%m-%d-%H:%m:%S")
+		name = dt.strftime("mod-%Y-%m-%d-%H:%M:%S")
 		plt.savefig(path+"/"+name)
 	plt.show()
 	
@@ -92,14 +92,10 @@ def __plotone(data, n, path):
 	fig1.set_xticks(xax)
 	fig1.set_xticklabels(lbls)
 	fig1.set_title(str(n)+" x redundant")
-#	if(not(path==None)):
-#		dt = datetime.datetime.now()
-#		name = dt.strftime("%Y-%m-%d-%H:%m:%S")
-#		plt.savefig(path+"/"+name)
 	return fig
-	#plt.show()
 
 def plotbypos(data, path=None):
+	names = {'': "n/a", 'ADV': "adv.", 'VD': "verb (past)", 'P': "prep.", 'ADJ': "adj.", 'PRO': "pro.", 'V': "verb (inf)", ',': "comma", 'VN': "verb (part.)", 'WH': "wh pro./det.", 'TO': "to", 'N': "noun", 'VBP': "verb (be)", '.': "end punc.", 'VBZ': "verb (pres.)", ':': "colon", 'CNJ': "conj.", 'MOD': "mod. aux.", 'VG': "verb (ger.)", 'NUM': "num (card.)", 'EX': "num (ord.)", 'DET': "det." }
 	locs = {'change' : 221, 'insert' : 222, 'delete' : 223, 'reorder' : 224}
         fig = plt.figure()
 	for nn in data: 
@@ -107,13 +103,13 @@ def plotbypos(data, path=None):
 		yax = [data[nn][k] for k in lbls] 
 		xax = range(len(yax))
 		fig1 = fig.add_subplot(locs[nn]) 
-		fig1.bar(xax, yax)#, align="center") 
+		fig1.bar(xax, yax, align="center") 
 		fig1.set_xticks(xax) 
-		fig1.set_xticklabels(lbls) 
+		fig1.set_xticklabels([names[k] for k in lbls])
 		fig1.set_title(nn)
-		plt.setp(fig1.get_xticklabels(), fontsize=8)
+		plt.setp(fig1.get_xticklabels(), fontsize=8, rotation='vertical')
 		plt.tight_layout()
-       # fig.autofmt_xdate()
+      #  fig.autofmt_xdate()
 	return fig
 
 def plotbyn(data, n=0, path=None):

@@ -37,6 +37,7 @@ for m in data:
 		if(not(p == 'BLANK')):
 			new_data[m][p] = data[m][p]
 print new_data
+print "generating figures..."
 figures.plot_pos(new_data, path="figures/agreement")
 
 """
