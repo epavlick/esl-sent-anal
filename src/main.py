@@ -26,9 +26,17 @@ graph = edit_graph.get_graph(all_sents, all_edits)
 rgraph = graph[0]
 egraph = graph[1]
 
-#figures.plot_agreements(edit_anal.agreement(rgraph.data), path="figures/agreement")
+print "generating figures..."
 
-#figures.plot_modes(edit_anal.by_mode(rgraph.data), path="figures/agreement")
+
+print "...edits by mode..."
+figures.plot_modes(edit_anal.by_mode(rgraph.data), path="figures/agreement")
+
+print "...agreements by mode..."
+figures.plot_agreements(edit_anal.agreement(rgraph.data), path="figures/agreement")
+edit_anal.agreement(rgraph.data)
+
+print "...edits by pos..."
 data = edit_anal.by_pos(rgraph.data)[3]
 new_data = {}
 for m in data:
@@ -36,10 +44,14 @@ for m in data:
 	for p in data[m]:
 		if(not(p == 'BLANK')):
 			new_data[m][p] = data[m][p]
-print new_data
-print "generating figures..."
 figures.plot_pos(new_data, path="figures/agreement")
 
+print "...agreements by pos..."
+figures.plot_agreements_pos(edit_anal.agreement_pos(rgraph.data, n=3), path="figures/agreement")
+#edit_anal.agreement_pos(rgraph.data, n=3)
+
+print "sanity check..."
+edit_anal.sanitycheck()
 """
 
 print "writing final sentences to log..."

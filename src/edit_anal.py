@@ -1,3 +1,10 @@
+import edit_graph
+
+sanity_check = {"change" : 0, "delete" : 0, "reorder" : 0, "insert" : 0}
+sanity_totals = {"change" : 0, "delete" : 0, "reorder" : 0, "insert" : 0}
+pos_sanity_check = {"change" : 0, "delete" : 0, "reorder" : 0, "insert" : 0}
+pos_sanity_totals = {"change" : 0, "delete" : 0, "reorder" : 0, "insert" : 0}
+
 def byn(data):
 	retmap = {1 : {}, 2 : {}, 3 : {}, 4 : {}}
 	for sentnum in data:
@@ -61,17 +68,55 @@ def count_words(data, mode, n):
 				if(not(found)):
 					for e in alts[a]:
 						if(e.mode.strip() == mode):
+							sanity_totals[mode] += 1
 							if(not(a in corrs)):
 								corrs[a] = 0
 								found = True
 							else:
 								corrs[a] += 1
+								sanity_check[mode] += 1
 							break
 		if(n==1):
 			retmap[sentnum] = [float(corrs[idx]) / n for idx in corrs]
 		else:	
 			retmap[sentnum] = [float(corrs[idx]) / (n - 1) for idx in corrs]
 	return retmap
+
+def count_words_pos(data, mode, n, pos):
+	retmap = {}
+	for sentnum in data:
+		corrs = {}
+		for sent in data[sentnum]:
+			alts = sent.get_alterations(pos=True)
+			found = False
+			for a in alts:
+				if(not(found)):
+					for e in alts[a]['alt']:
+						poss = []
+						if(mode == 'delete'):
+							poss = alts[a]['ipos']
+						else:
+							poss = alts[a]['pos']
+						if(e.mode.strip() == mode and (pos in poss)):
+							pos_sanity_totals[mode] += 1
+							if(not(a in corrs)):
+								corrs[a] = 0
+								found = True
+							else:
+								corrs[a] += 1
+								pos_sanity_check[mode] += 1
+							break
+		if(n==1):
+			retmap[sentnum] = [float(corrs[idx]) / n for idx in corrs]
+		else:	
+			retmap[sentnum] = [float(corrs[idx]) / (n - 1) for idx in corrs]
+	return retmap
+
+def sanitycheck():
+	print sanity_check
+	print sanity_totals
+	print pos_sanity_check
+	print pos_sanity_totals
 
 def __agreement(_data, mode, n):
 	data = byn(_data)
@@ -85,6 +130,24 @@ def __agreement(_data, mode, n):
 	return (float(cntsum) / total) * (n - 1)
 
 	
+def __agreement_pos(_data, mode, n):
+	data = byn(_data)[n]
+	print "compiling" , mode , "data..." 
+	retmap = {p : 0 for p in edit_graph.Sentence.POS_LIST}
+	for pos in retmap:
+		print "...", pos	
+		chdata = count_words_pos(data, mode, n, pos)	
+		cntsum = 0
+		total = 0
+		for num in chdata:
+			for c in chdata[num]:
+				cntsum += c
+				total += 1
+		if(not(total == 0)):
+			retmap[pos] = (float(cntsum) / total) * (n - 1)
+	
+	return retmap
+
 def agreement(data, n=0, mode=None):
 	ns = []
 	modes = []
@@ -103,9 +166,18 @@ def agreement(data, n=0, mode=None):
 		for m in modes:
 			submap[m] = __agreement(data, m, nn)
 		retmap[nn] = submap
+	print retmap[3]
 	return retmap
 
-
+def agreement_pos(data, n=3):
+        if(n < 1 or n > 4):
+        	print "invalid value for n"
+		return
+	retmap = {"change" : {}, "insert" : {}, "delete" : {}, "reorder" : {}}
+        for m in retmap:
+                retmap[m] = __agreement_pos(data, m, n)
+	print retmap
+        return retmap
 
 
 

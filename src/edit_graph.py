@@ -57,8 +57,6 @@ class Node:
 				p.alter(edit)
 	
 	def tag(self, _tag):
-		if(_tag == "DT"):
-			print _tag, str(self)
 		self.pos_tag.append(_tag)
 		if(not(self.is_root)):
 			for p in self.parent:
@@ -96,6 +94,7 @@ class Node:
 		return False
 
 class Sentence:
+	POS_LIST = [] 
 	id_num = 0
 	def __init__(self, sent):
 		self.id = Sentence.id_num
@@ -190,16 +189,22 @@ class Sentence:
 		for r in self.revisions[self.latest].words:
 			s += r.text + " "
 		toks = nltk.word_tokenize(figures.undo_csv_format(s))
-		#print nltk.pos_tag(toks)
-		return [(word, self.simplify(tag)) for word, tag in nltk.pos_tag(toks)]		
+		tagged = nltk.pos_tag(toks)
+		for tag in tagged:
+			if(not(self.simplify(tag[1]) in Sentence.POS_LIST)):
+				Sentence.POS_LIST.append(self.simplify(tag[1]))
+		return [(word, self.simplify(tag)) for word, tag in tagged]		
 
 	def __get_initial_pos(self):
 		s = ""
 		for r in self.revisions[0].words:
 			s += r.text + " "
 		toks = nltk.word_tokenize(figures.undo_csv_format(s))
-		#print nltk.pos_tag(toks)
-		return [(word, self.simplify(tag)) for word, tag in nltk.pos_tag(toks)]		
+		tagged = nltk.pos_tag(toks)
+		for tag in tagged:
+			if(not(self.simplify(tag[1]) in Sentence.POS_LIST)):
+				Sentence.POS_LIST.append(self.simplify(tag[1]))
+		return [(word, self.simplify(tag)) for word, tag in tagged]		
 	
 	def percolate_pos(self):
 		tags = self.__get_final_pos()

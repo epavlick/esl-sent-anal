@@ -72,6 +72,15 @@ def plot_pos(data, n=0, path=None):
                 plt.savefig(path+"/"+name)
         plt.show()
 	
+def plot_agreements_pos(data, n=0, path=None):
+        fig = plotbypos(data, path)
+        plt.suptitle("Annotator across parts of speech")
+        if(not(path==None)):
+                dt = datetime.datetime.now()
+                name = dt.strftime("posagr-%Y-%m-%d-%H:%M:%S")
+                plt.savefig(path+"/"+name)
+        plt.show()
+	
 def plot_modes(data, n=0, path=None):
 	fig = plotbyn(data, n, path)
 	plt.suptitle("Number of edits by edit mode")
