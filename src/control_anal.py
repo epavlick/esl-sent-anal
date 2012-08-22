@@ -45,5 +45,35 @@ def numassign(data):
 	print sents 
 	return sents 
 
+def grade_sents(worker_data, control_data, hitdict):
+	return 
+	
+
+#compare control sentence changes against workers corrections assign a score as % of errors that were fixed
+def grade_sent(hit, assignment, worker):
+        totalpts = 0
+        total = 0
+        oracle = getoracle(assignment)
+        turker = getturker(assignment)
+        for sent in oracle:
+                if(sent in turker):
+                        for oe in oracle[sent]:
+                                for te in turker[sent]:
+                                        total += 1
+                                #       print oe['idx'] == te['idx'], correctionpoints(oe, te)
+                                        totalpts += correctionpoints(oe, te)
+        updatedb(worker, totalpts, total)
+
+def correctionpoints(mistake, fix):
+        points = 0
+        inverses = {'insert' : 'delete', 'delete' : 'insert', 'change' : 'change'}
+        sameidx = mistake['idx'] == fix['idx']
+        sameword = mistake['word'] == fix['word']
+        samemode = inverses[mistake['mod']] == fix['mod']
+        if(sameidx and samemode):
+                points += 0.5
+                if(sameword):
+                        points += 0.5
+        return points
 
 

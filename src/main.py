@@ -1,3 +1,4 @@
+import csv
 import extract_data
 import sys
 import edit_graph
@@ -20,6 +21,27 @@ if(not(args.data)):
         exit(0)
 
 print "Reading data from " + args.data + "..."
+
+print "Mapping assignment ids to HIT ids..."
+
+assign2hit = {}
+
+#util function for now, since I forgot to flesh out hits_data table with assignment ID
+mturk2id = {}
+hit_data = open(args.data+"/assign_data")
+assignraw = csv.DictReader(hit_data)
+for line in assignraw:
+	aid = line['id'].strip()
+	assignid = line[' mturk_assignment_id'].strip()
+	mturk2id[assignid] = aid
+
+hit_data = open(args.data+"/hit_data_dump")
+raw = csv.DictReader(hit_data)
+for line in raw:
+	hit = line['hit_id'].strip()
+	assign = line['assignment_id'].strip()
+	if(assign in mturk2id):
+		assign2hit[mturk2id[assign]] = hit
 
 rgraph = {}
 egraph = {}
@@ -44,7 +66,13 @@ if(args.controls or args.controlsonly):
 	print counts
 	corrcounts = control_anal.avgnumcorr(egraph.data)
 	print corrcounts
-	control_anal.numassign(egraph.data)
+	#control_anal.numassign(egraph.data)	
+	all_corrs = {assign2hit[a] : { a : egraph.data[a] } for a in egraph.data}
+	print all_corrs.keys()
+	print all_controls.keys()
+	control_anal.grade_sents(egraph.data, all_controls, assign2hit)
+
+	
 
 #Plot the frequency of edit modes, partitioned based on number of redundancies
 #figures.plot_modes(edit_anal.by_mode(rgraph.data), path="figures/agreement")
