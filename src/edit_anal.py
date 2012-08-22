@@ -68,13 +68,15 @@ def count_words(data, mode, n):
 				if(not(found)):
 					for e in alts[a]:
 						if(e.mode.strip() == mode):
-							sanity_totals[mode] += 1
+							if(n == 3):
+								sanity_totals[mode] += 1
 							if(not(a in corrs)):
 								corrs[a] = 0
 								found = True
 							else:
 								corrs[a] += 1
-								sanity_check[mode] += 1
+								if(n == 3):
+									sanity_check[mode] += 1
 							break
 		if(n==1):
 			retmap[sentnum] = [float(corrs[idx]) / n for idx in corrs]

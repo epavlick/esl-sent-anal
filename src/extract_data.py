@@ -2,6 +2,7 @@ import csv
 import sys
 import rebuild_sents
 import edit_graph
+import progressbar
 
 #edit object containing information about an atomic change made to a sentence
 class Edit:
@@ -36,6 +37,7 @@ def build_edit_map(edit_data, sent_data):
 	raw_edits = csv.DictReader(edit_data)
 	#mapping from assignment: [list of {sentence: [list of edits]}]
 	all_edits = {}
+	print 'Build edit map: ',
 	for e in raw_edits: 
 		assign = e[' assignment_id'].strip()
 		if(not(assign == "")): 
@@ -48,13 +50,30 @@ def build_edit_map(edit_data, sent_data):
 				all_edits[assign][sent] = [edit[sent]]
 			else:
 				all_edits[assign][sent].append(edit[sent])
+	print 'Complete'
 	return all_edits		
 
 def build_sent_map(sent_data):
 	raw_sents = csv.DictReader(sent_data)
 	all_sents = {}
+	print 'Build sent map: ',
 	for s in raw_sents:
 		all_sents[s['id']] = s[' sentence']	
+	print 'Complete'
 	return all_sents
 
-	
+#Build map of hitid : {map of sentences : [list of edits]}
+def build_control_map(control_data):
+	raw_cntrl = csv.DictReader(control_data)
+	all_controls = {}
+	print 'Build control map: ',
+	for c in raw_cntrl:
+		hit = c[' hit_id'].strip()
+		if(not(hit in all_controls)):
+			all_controls[hit] = {}
+		sent = c['esl_sentence_id'].strip()
+		if(not(sent in all_controls[hit])):
+			all_controls[hit][sent] = []
+		all_controls[hit][sent].append(c) 
+	print 'Complete'
+	return all_controls

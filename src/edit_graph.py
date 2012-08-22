@@ -2,6 +2,7 @@ import rebuild_sents
 import figures
 import sys
 import nltk
+import progressbar
 from nltk.tag.simplify import simplify_brown_tag
 
 #edit object containing information about an atomic change made to a sentence
@@ -235,7 +236,7 @@ class Sentence:
 			buf.write(str(a)+'\n')
 	
 	def print_lineage(self, name):
-		figures.draw_revisions(self.revisions, "figures-20120726/"+name) # "figures/sent-"+str(self.id))
+		figures.draw_revisions(self.revisions, "figures-20120820/"+name) # "figures/sent-"+str(self.id))
 	
 	
 class Revision:
@@ -423,6 +424,7 @@ class Revision:
 		new.edit_num = edit.seq_id
 		return new
 
+#map of assignment id : {sentence_id : [edits]}
 class EditGraph:
 	def __init__(self, graph):
 		self.data = graph
@@ -442,6 +444,19 @@ class EditGraph:
 					for edit in self.data[assign][sentid]:
 						edits[assign].append(edit)
 		return edits
+
+	#return data in for of sentid : {assignment : [edits]}
+	def get_by_sent(self):
+		by_sents = {}
+		for assign in self.data:
+			for s in self.data[assign]:
+				if(not(s in by_sents)):
+					by_sents[s] = {}
+				for edit in self.data[assign][s]:
+					if(not(assign in by_sents[s])):
+						by_sents[s][assign] = []
+					by_sents[s][assign].append(edit)
+		return by_sents
 			 
 class RevisionGraph:
 	"""Highest level data structure containing map from sentence id to all the revisions on that sentence"""
@@ -488,9 +503,15 @@ def generate_figures(graph, sentid=None):
         	        i += 1
 	
 def get_graph(all_sents, all_edits):
+	widgets = ['Build graph: ', progressbar.Percentage(), ' ', progressbar.Bar(marker='=',left='[',right=']'), ' ', progressbar.ETA()]
+        pbar = progressbar.ProgressBar(widgets=widgets, maxval=len(all_edits))
+        pbar.start()
 	graph_by_sent = {}
 	edits_by_sent = {}
+	i = 0
 	for assign in all_edits:
+		pbar.update(i)
+		i += 1
 		if(not(assign in edits_by_sent)):
 			edits_by_sent[assign] = {}
 		for sent in all_edits[assign]:
@@ -509,4 +530,5 @@ def get_graph(all_sents, all_edits):
 					s.revise(edit)
 					edits_by_sent[assign][sent].append(edit)
 				graph_by_sent[sent].append(s)	
+	pbar.finish()
 	return [RevisionGraph(graph_by_sent), EditGraph(edits_by_sent)]

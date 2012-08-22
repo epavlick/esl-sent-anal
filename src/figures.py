@@ -6,6 +6,7 @@ import datetime
 NODE_WIDTH = 1 
 NODE_HEIGHT = 0.5 
 
+#Remove csv special characters and replace with normal ascii characters
 def undo_csv_format(string):
     string = string.strip()
     string = string.replace("&amp;", '&')
@@ -16,6 +17,7 @@ def undo_csv_format(string):
     string = string.replace("&#39;", "'")
     return string
 
+#Draw graph of edits to sentence
 def draw_revisions(revs, name):
 	c = canvas.canvas()
 	y = len(revs)	
