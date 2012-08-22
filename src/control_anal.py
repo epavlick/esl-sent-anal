@@ -8,7 +8,6 @@ def get_counts(data):
 			for error in data[hit][sent]:
 				mode = error[' mode'].strip()
 				ret[mode] += 1
-	print ret
 	return ret
 	
 #Average number of errors per sentence
@@ -22,6 +21,18 @@ def avgnumerr(data):
 				errs += 1
 	return float(errs) / total
 
+#Distribution of error count over control sents
+def numerrdist(data, reps):
+	counts = []
+	for hit in data:
+		for sent in data[hit]:
+			errs = 0
+			for error in data[hit][sent]:
+				errs += 1
+			for i in range(0, reps[sent]):
+				counts.append(errs)
+	return counts 
+
 #Average number of turker-made corrections per sentence
 def avgnumcorr(data):
 	total = 0
@@ -33,6 +44,17 @@ def avgnumcorr(data):
 				corr += 1
 	return float(corr) / total
 
+#Average number of turker-made corrections per sentence
+def numcorrdist(data):
+	counts = []
+	for assign in data:
+		for sent in data[assign]:
+			corr = 0	
+			for error in data[assign][sent]:
+				corr += 1
+			counts.append(corr)
+	return counts
+
 #get the number of times each sentence was assigned to a worker for editing
 def numassign(data):
 	sents = {}
@@ -42,38 +64,174 @@ def numassign(data):
 				sents[sent] = 1
 			else:	
 				sents[sent] += 1
-	print sents 
 	return sents 
 
-def grade_sents(worker_data, control_data, hitdict):
-	return 
-	
+#get ID accuracy and ID+word accuracy dists
+def accdist(worker_data, control_data):
+	ids = []
+	idsnwords = []
+	for hit in worker_data:
+		for assign in worker_data[hit]:
+			for sent in worker_data[hit][assign]:
+				fwd = formatworker(worker_data[hit][assign][sent])
+				fcd = formatcontrol(control_data[hit][sent])
+				i = grade_sent(fwd, fcd, grademode='i')
+				iw = grade_sent(fwd, fcd, grademode='i+w')
+				print i, iw
+				assert i >= iw
+				ids.append(i)
+				idsnwords.append(iw)
+	return ids, idsnwords
+
+#get list of accuracies across all workers and sents
+def grade_sents(worker_data, control_data):
+	perfs = []
+	for hit in worker_data:
+		for assign in worker_data[hit]:
+			for sent in worker_data[hit][assign]:
+				fwd = formatworker(worker_data[hit][assign][sent])
+				fcd = formatcontrol(control_data[hit][sent])
+				p = grade_sent(fwd,fcd)
+				if(not(p==None)):
+					perfs.append(p)
+	return perfs
+
+#get list of accuracies across all workers and sents
+def grade_sents_modes(worker_data, control_data, grademode='i+w'):
+	dels = [] 
+	chgs = []
+	ints = []
+	for hit in worker_data:
+		for assign in worker_data[hit]:
+			for sent in worker_data[hit][assign]:
+				fwd = formatworker(worker_data[hit][assign][sent])
+				fcd = formatcontrol(control_data[hit][sent])
+				dg = grade_sent_mode(fwd,fcd,"delete", grademode)
+				if(not(dg==None)):
+					dels.append(dg)
+				cg = grade_sent_mode(fwd,fcd,"change", grademode)
+				if(not(cg==None)):
+					chgs.append(cg)
+				ig = grade_sent_mode(fwd,fcd,"insert", grademode)
+				if(not(ig == None)):
+					ints.append(ig)
+
+	return dels, chgs, ints
+
+def avgacc_modes(worker_data, control_data):
+	dels, chgs, ints = grade_sents_modes(worker_data, control_data, grademode='i')
+	delsw, chgsw, intsw = grade_sents_modes(worker_data, control_data, grademode='i+w')
+	avgs = [float(sum(l)) / len(l) for l in [dels, chgs, ints]]
+	avgsw = [float(sum(l)) / len(l) for l in [delsw, chgsw, intsw]]
+	print avgs
+	print avgsw
+	return avgs, avgsw
 
 #compare control sentence changes against workers corrections assign a score as % of errors that were fixed
-def grade_sent(hit, assignment, worker):
-        totalpts = 0
+def grade_sent(candidate, ref, grademode='i+w'):
+	totalpts = 0
         total = 0
-        oracle = getoracle(assignment)
-        turker = getturker(assignment)
-        for sent in oracle:
-                if(sent in turker):
-                        for oe in oracle[sent]:
-                                for te in turker[sent]:
-                                        total += 1
-                                #       print oe['idx'] == te['idx'], correctionpoints(oe, te)
-                                        totalpts += correctionpoints(oe, te)
-        updatedb(worker, totalpts, total)
+	edits = {}
+	for edit in ref:
+		total += 1
+		edits[edit['idx']] = edit
+		
+	for cedit in candidate:
+		idx = cedit['idx']
+		if(idx in edits):
+			print idx, cedit
+			if(grademode == 'i'):
+				totalpts += idpoints(edits[idx], cedit)
+			else:
+				totalpts += corrpoints(edits[idx], cedit)
+			edits.pop(idx)
+	
+	return float(totalpts) / total
 
-def correctionpoints(mistake, fix):
-        points = 0
+#compare control sentence changes against workers corrections assign a score as % of errors that were fixed
+def grade_sent_mode(candidate, ref, mode, grademode='i+w'):
+	totalpts = 0
+        total = 0
+	edits = {}
+	for edit in ref:
+		if(edit['mode'] == mode):
+			total += 1
+			edits[edit['idx']] = edit
+		
+	for cedit in candidate:
+		idx = cedit['idx']
+		if(idx in edits):
+			if(grademode == 'i'):
+				totalpts += idpoints(edits[idx], cedit)
+			else:
+				totalpts += corrpoints(edits[idx], cedit)
+			edits.pop(idx)
+	
+	if(total == 0):
+		return None
+	return float(totalpts) / total
+
+#compare control sentence changes against workers corrections assign a score as % of errors that were fixed
+def grade_sent_mode1(candidate, ref, mode):
+	totalpts = 0
+        total = 0
+        for edit in ref:
+		if(edit['mode'] == mode):
+			total += 1
+			p = 0
+			for cedit in candidate:
+				p = corrpoints(edit, cedit)
+			if(not(p==None)):
+				totalpts += p
+	if(total == 0):
+		return None
+	return float(totalpts) / total
+
+#util to put control error data in format for grading
+def formatcontrol(sent):
+	formatted = []
+	for e in sent:
+		edict = {}
+		edict['idx'] = int(e[' err_idx'])
+		edict['mode'] = e[' mode'].strip()
+		edict['word'] = e[' oldwd'].strip()
+		formatted.append(edict)
+	return formatted
+	
+#util to put turker correction data in format for grading
+def formatworker(sent):
+	formatted = []
+	for e in sent:
+		edict = {}
+		edict['idx'] = int(e.sp_start.strip())
+		edict['mode'] = e.mode.strip()
+		edict['word'] = e.new_wd.strip()
+		edict['rank'] = e.seq_id.strip()
+		formatted.append(edict)
+	return sorted(formatted, key=lambda e : e['rank'], reverse=True)
+
+#number of points, weighting between IDing error and making correction change	
+def corrpoints(mistake, fix):
+	pts = idpoints(mistake, fix)
+	if(pts > 0):
+		pts += wordpoints(mistake,fix)
+	assert pts <= 2
+	return float(pts) / 2
+
+#point if error is found at correct location
+def idpoints(mistake, fix):
         inverses = {'insert' : 'delete', 'delete' : 'insert', 'change' : 'change'}
-        sameidx = mistake['idx'] == fix['idx']
-        sameword = mistake['word'] == fix['word']
-        samemode = inverses[mistake['mod']] == fix['mod']
-        if(sameidx and samemode):
-                points += 0.5
-                if(sameword):
-                        points += 0.5
-        return points
+        if(not(mistake['idx'] == fix['idx'])):
+		print "OH MY OH ME", mistake['idx'], fix['idx']
+		return None
+	if(inverses[mistake['mode'].strip()] == fix['mode']):
+        	return 1
+	return 0
+
+#point if error is changed to correct word
+def wordpoints(mistake, fix):
+        if(mistake['word'] == fix['word']):
+		return 1
+        return 0
 
 

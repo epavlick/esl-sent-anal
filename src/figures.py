@@ -22,7 +22,6 @@ def draw_revisions(revs, name):
 	c = canvas.canvas()
 	y = len(revs)	
 	for r in revs:
-		print r
 		x = 0
 		for w in r.words:
 			changed = False
@@ -140,8 +139,78 @@ def plotbyn(data, n=0, path=None):
 	else:
 		__plotone(data, n, path)
 
+def avgaccs(avgs1, avgs2, path=None):
+	width = 0.5
+	fig = plt.figure()
+	fig1 = fig.add_subplot(111)
+	lbls = ['Delete', 'Change', 'Insert']
+	xax = np.arange(len(lbls)) #range(len(avgs1)) 
+	fig1.bar(xax, avgs1, width, align="center")
+	fig1.bar(xax+width, avgs2, width, align="center")
+	fig1.set_title("Average error correction accuracy by error type")
+	plt.ylabel("Average accuracy")
+	fig1.set_xticks(xax)
+	fig1.set_xticklabels(lbls)
+	if(path):
+                dt = datetime.datetime.now()
+                name = dt.strftime("avgaccs-%Y-%m-%d-%H:%M:%S")
+                plt.savefig(path+"/"+name)
+	plt.show()
 	
+	
+def perfhisto(perfs, path=None):
+	fig = plt.figure()
+	fig1 = fig.add_subplot(111)
+	fig1.hist(perfs, bins=10)
+	fig1.set_title("Error correction accuracy by turkers on artificially-generated errors")
+	plt.xlabel("Percent of errors corrected")
+	plt.ylabel("Number of sentences")
+	if(path):
+                dt = datetime.datetime.now()
+                name = dt.strftime("perfhisto-%Y-%m-%d-%H:%M:%S")
+                plt.savefig(path+"/"+name)
+	plt.show()
 
 
-
+def counthisto(errs, corrs, path=None):
+	fig = plt.figure()
+	fig1 = fig.add_subplot(111)
+	fig1.hist([errs, corrs], bins=10)
+	fig1.set_title("Number of errors present per sentence")
+	plt.xlabel("Number of errors")
+	plt.ylabel("Number of sentences")
+	plt.legend(('Number of actual errors present', 'Number of corrections made by turkers'))
+	if(path):
+                dt = datetime.datetime.now()
+                name = dt.strftime("counthisto-%Y-%m-%d-%H:%M:%S")
+                plt.savefig(path+"/"+name)
+	plt.show()
+	
+def acchisto(ids, idsw, path=None):
+	fig = plt.figure()
+	fig1 = fig.add_subplot(111)
+	fig1.hist([ids, idsw], bins=10)
+	fig1.set_title("Error identification and correction accuracy by turkers on artificially-generated errors")
+	plt.xlabel("Percent of errors corrected")
+	plt.ylabel("Number of sentences")
+	plt.legend(('Error correctly identified', 'Error correctly identified and edited'))
+	if(path):
+                dt = datetime.datetime.now()
+                name = dt.strftime("acchisto-%Y-%m-%d-%H:%M:%S")
+                plt.savefig(path+"/"+name)
+	plt.show()
+	
+def perfhisto_mode(dels, chgs, ints, path=None):
+	fig = plt.figure()
+	fig1 = fig.add_subplot(111)
+	fig1.hist([dels, chgs, ints], bins=10)
+	fig1.set_title("Error correction accuracy by turkers on artificially-generated errors, by error type")
+	plt.xlabel("Percent of errors corrected")
+	plt.ylabel("Number of sentences")
+	plt.legend(('Deletions', 'Changes', 'Inserts'))
+	if(path):
+                dt = datetime.datetime.now()
+                name = dt.strftime("perfhistomode-%Y-%m-%d-%H:%M:%S")
+                plt.savefig(path+"/"+name)
+	plt.show()
 	
