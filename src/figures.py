@@ -145,10 +145,11 @@ def avgaccs(avgs1, avgs2, path=None):
 	fig1 = fig.add_subplot(111)
 	lbls = ['Delete', 'Change', 'Insert']
 	xax = np.arange(len(lbls)) #range(len(avgs1)) 
-	fig1.bar(xax, avgs1, width, align="center")
-	fig1.bar(xax+width, avgs2, width, align="center")
+	fig1.bar(xax, avgs1, width, align="center", color="blue")
+	fig1.bar(xax+width, avgs2, width, align="center", color="red")
 	fig1.set_title("Average error correction accuracy by error type")
 	plt.ylabel("Average accuracy")
+	plt.legend(('Error correctly identified', 'Error correctly identified and edited'), loc=8)
 	fig1.set_xticks(xax)
 	fig1.set_xticklabels(lbls)
 	if(path):

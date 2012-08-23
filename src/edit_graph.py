@@ -236,7 +236,7 @@ class Sentence:
 			buf.write(str(a)+'\n')
 	
 	def print_lineage(self, name):
-		figures.draw_revisions(self.revisions, "figures-20120820/"+name) # "figures/sent-"+str(self.id))
+		figures.draw_revisions(self.revisions, "figures/schematics/"+name) # "figures/sent-"+str(self.id))
 	
 	
 class Revision:

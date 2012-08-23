@@ -72,7 +72,7 @@ if(args.controls or args.controlsonly):
 #	errs = control_anal.numerrdist(all_controls, reps)
 #	corrs = control_anal.numcorrdist(egraph.data)
 #	figures.counthisto(errs, corrs, path='figures/performance')
-	all_corrs = {assign2hit[a] : { a : egraph.data[a] } for a in egraph.data}
+#	all_corrs = {assign2hit[a] : { a : egraph.data[a] } for a in egraph.data}
 
 #get performance distribution with and without caring about word choice
 #	ids, idsw = control_anal.accdist(all_corrs, all_controls)
@@ -86,8 +86,8 @@ if(args.controls or args.controlsonly):
 #	figures.perfhisto_mode(ds, cs, ins, path='figures/performance')
 
 #get overall accuracy by mode, both kinds of accuracy calc
-	avgs, avgsw = control_anal.avgacc_modes(all_corrs, all_controls)		
-	figures.avgaccs(avgs, avgsw, path="figures/agreement")
+#	avgs, avgsw = control_anal.avgacc_modes(all_corrs, all_controls)		
+#	figures.avgaccs(avgs, avgsw, path="figures/performance")
 
 #Plot the frequency of edit modes, partitioned based on number of redundancies
 #figures.plot_modes(edit_anal.by_mode(rgraph.data), path="figures/agreement")
@@ -124,11 +124,11 @@ if(args.controls or args.controlsonly):
 #	print r.get_alterations(pos=True)
 #log.close()
 
-#print "generating figures..."
-#i = 0
-#for s in rgraph.data:
-#	edit_graph.generate_figures(rgraph.data, s)
-#	i += 1	
+print "generating figures..."
+i = 0
+for s in rgraph.data:
+	edit_graph.generate_figures(rgraph.data, s)
+	i += 1	
 
 #edit_graph.generate_figures(rgraph.data, '45480')
 
